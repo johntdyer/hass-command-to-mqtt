@@ -75,12 +75,12 @@ ssh_hosts:
         interval: 60
         unit_of_measurement: "°C"
         device_class: "temperature"
-      
+
       - name: "memory_usage"
         command: "free | grep Mem | awk '{printf \"%.2f\", ($3/$2) * 100.0}'"
         interval: 120
         unit_of_measurement: "%"
-      
+
       - name: "uptime"
         command: "uptime -p"
         interval: 300
@@ -94,7 +94,7 @@ ssh_hosts:
       - name: "nginx_status"
         command: "systemctl is-active nginx"
         interval: 60
-      
+
       - name: "disk_usage"
         command: "df -h / | tail -1 | awk '{print $5}' | sed 's/%//'"
         interval: 300
@@ -164,26 +164,26 @@ commands:
     command: "cat /sys/class/thermal/thermal_zone0/temp | awk '{print $1/1000}'"
     unit_of_measurement: "°C"
     device_class: "temperature"
-  
+
   # CPU Usage
   - name: "cpu_usage"
     command: "top -bn1 | grep 'Cpu(s)' | awk '{print $2}' | sed 's/%us,//'"
     unit_of_measurement: "%"
-  
+
   # Memory Usage
   - name: "memory_usage"
     command: "free | grep Mem | awk '{printf \"%.2f\", ($3/$2) * 100.0}'"
     unit_of_measurement: "%"
-  
+
   # Disk Usage
   - name: "disk_usage"
     command: "df -h / | tail -1 | awk '{print $5}' | sed 's/%//'"
     unit_of_measurement: "%"
-  
+
   # Load Average
   - name: "load_average"
     command: "uptime | awk -F'load average:' '{print $2}' | awk '{print $1}' | sed 's/,//'"
-  
+
   # Network Ping Test
   - name: "ping_google"
     command: "ping -c 1 8.8.8.8 | grep 'time=' | awk -F'time=' '{print $2}' | awk '{print $1}'"
@@ -197,7 +197,7 @@ commands:
   # Check if service is active
   - name: "nginx_status"
     command: "systemctl is-active nginx"
-  
+
   # Get service status with details
   - name: "docker_status"
     command: "systemctl status docker --no-pager -l | head -3 | tail -1 | awk '{print $2}'"

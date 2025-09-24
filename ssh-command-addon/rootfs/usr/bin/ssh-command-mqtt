@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 
 class SSHCommandExecutor:
     """Execute SSH commands on remote hosts"""
-    
-    def __init__(self, hostname: str, username: str, password: str = None, 
+
+    def __init__(self, hostname: str, username: str, password: str = None,
                  private_key: str = None, port: int = 22):
         self.hostname = hostname
         self.username = username
@@ -29,13 +29,13 @@ class SSHCommandExecutor:
         self.private_key = private_key
         self.port = port
         self.client = None
-    
+
     def connect(self) -> bool:
         """Connect to SSH host"""
         try:
             self.client = paramiko.SSHClient()
             self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            
+
             if self.private_key:
                 # Use private key authentication
                 key = paramiko.RSAKey.from_private_key_file(self.private_key)
@@ -53,33 +53,33 @@ class SSHCommandExecutor:
                     username=self.username,
                     password=self.password
                 )
-            
+
             logger.info(f"Connected to {self.hostname}:{self.port}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to connect to {self.hostname}: {e}")
             return False
-    
+
     def execute_command(self, command: str) -> tuple:
         """Execute command and return (stdout, stderr, return_code)"""
         try:
             if not self.client:
                 if not self.connect():
                     return None, "Connection failed", 1
-            
+
             stdin, stdout, stderr = self.client.exec_command(command)
             exit_status = stdout.channel.recv_exit_status()
-            
+
             stdout_data = stdout.read().decode('utf-8').strip()
             stderr_data = stderr.read().decode('utf-8').strip()
-            
+
             return stdout_data, stderr_data, exit_status
-            
+
         except Exception as e:
             logger.error(f"Failed to execute command '{command}' on {self.hostname}: {e}")
             return None, str(e), 1
-    
+
     def disconnect(self):
         """Close SSH connection"""
         if self.client:
@@ -89,8 +89,8 @@ class SSHCommandExecutor:
 
 class MQTTSensorPublisher:
     """Publish sensor data to MQTT with Home Assistant auto-discovery"""
-    
-    def __init__(self, broker: str, port: int = 1883, username: str = None, 
+
+    def __init__(self, broker: str, port: int = 1883, username: str = None,
                  password: str = None, discovery_prefix: str = "homeassistant"):
         self.broker = broker
         self.port = port
@@ -99,33 +99,33 @@ class MQTTSensorPublisher:
         self.discovery_prefix = discovery_prefix
         self.client = None
         self.connected = False
-    
+
     def connect(self) -> bool:
         """Connect to MQTT broker"""
         try:
             self.client = mqtt.Client()
-            
+
             if self.username and self.password:
                 self.client.username_pw_set(self.username, self.password)
-            
+
             self.client.on_connect = self._on_connect
             self.client.on_disconnect = self._on_disconnect
-            
+
             self.client.connect(self.broker, self.port, 60)
             self.client.loop_start()
-            
+
             # Wait for connection
             timeout = 10
             while not self.connected and timeout > 0:
                 time.sleep(1)
                 timeout -= 1
-            
+
             return self.connected
-            
+
         except Exception as e:
             logger.error(f"Failed to connect to MQTT broker: {e}")
             return False
-    
+
     def _on_connect(self, client, userdata, flags, rc):
         """Callback for MQTT connection"""
         if rc == 0:
@@ -133,18 +133,18 @@ class MQTTSensorPublisher:
             logger.info("Connected to MQTT broker")
         else:
             logger.error(f"Failed to connect to MQTT broker, return code {rc}")
-    
+
     def _on_disconnect(self, client, userdata, rc):
         """Callback for MQTT disconnection"""
         self.connected = False
         logger.warning("Disconnected from MQTT broker")
-    
-    def publish_sensor_config(self, sensor_name: str, hostname: str, 
+
+    def publish_sensor_config(self, sensor_name: str, hostname: str,
                             unit_of_measurement: str = None, device_class: str = None):
         """Publish sensor discovery configuration"""
         config_topic = f"{self.discovery_prefix}/sensor/ssh_{hostname}_{sensor_name}/config"
         state_topic = f"ssh_command/{hostname}/{sensor_name}/state"
-        
+
         config = {
             "name": f"SSH {hostname} {sensor_name}",
             "unique_id": f"ssh_{hostname}_{sensor_name}",
@@ -156,16 +156,16 @@ class MQTTSensorPublisher:
                 "model": "Remote Command Executor"
             }
         }
-        
+
         if unit_of_measurement:
             config["unit_of_measurement"] = unit_of_measurement
-        
+
         if device_class:
             config["device_class"] = device_class
-        
+
         self.client.publish(config_topic, json.dumps(config), retain=True)
         logger.info(f"Published discovery config for {sensor_name} on {hostname}")
-    
+
     def publish_sensor_state(self, sensor_name: str, hostname: str, value: str):
         """Publish sensor state"""
         state_topic = f"ssh_command/{hostname}/{sensor_name}/state"
@@ -175,21 +175,21 @@ class MQTTSensorPublisher:
 
 class SSHCommandAddon:
     """Main add-on class"""
-    
+
     def __init__(self):
         self.config = self.load_config()
         self.mqtt_client = None
         self.ssh_executors = {}
         self.running = True
-        
+
         # Set log level
         log_level = self.config.get('log_level', 'info').upper()
         logging.getLogger().setLevel(getattr(logging, log_level))
-    
+
     def load_config(self) -> Dict[str, Any]:
         """Load add-on configuration"""
         config_path = '/data/options.json'
-        
+
         try:
             with open(config_path, 'r') as f:
                 config = json.load(f)
@@ -198,17 +198,17 @@ class SSHCommandAddon:
         except Exception as e:
             logger.error(f"Failed to load configuration: {e}")
             sys.exit(1)
-    
+
     def setup_mqtt(self) -> bool:
         """Setup MQTT connection"""
         mqtt_config = self.config.get('mqtt', {})
-        
+
         broker = mqtt_config.get('broker', 'core-mosquitto')
         port = mqtt_config.get('port', 1883)
         username = mqtt_config.get('username')
         password = mqtt_config.get('password')
         discovery_prefix = mqtt_config.get('discovery_prefix', 'homeassistant')
-        
+
         self.mqtt_client = MQTTSensorPublisher(
             broker=broker,
             port=port,
@@ -216,16 +216,16 @@ class SSHCommandAddon:
             password=password,
             discovery_prefix=discovery_prefix
         )
-        
+
         return self.mqtt_client.connect()
-    
+
     def setup_ssh_executors(self):
         """Setup SSH executors for each host"""
         ssh_hosts = self.config.get('ssh_hosts', [])
-        
+
         for host_config in ssh_hosts:
             hostname = host_config['hostname']
-            
+
             executor = SSHCommandExecutor(
                 hostname=hostname,
                 username=host_config['username'],
@@ -233,12 +233,12 @@ class SSHCommandAddon:
                 private_key=host_config.get('private_key'),
                 port=host_config.get('port', 22)
             )
-            
+
             self.ssh_executors[hostname] = {
                 'executor': executor,
                 'commands': host_config.get('commands', [])
             }
-    
+
     def publish_discovery_configs(self):
         """Publish MQTT discovery configurations for all sensors"""
         for hostname, host_data in self.ssh_executors.items():
@@ -249,32 +249,32 @@ class SSHCommandAddon:
                     unit_of_measurement=command_config.get('unit_of_measurement'),
                     device_class=command_config.get('device_class')
                 )
-    
+
     def execute_commands_for_host(self, hostname: str):
         """Execute commands for a specific host in a separate thread"""
         host_data = self.ssh_executors[hostname]
         executor = host_data['executor']
         commands = host_data['commands']
-        
+
         # Track last execution time for each command
         last_execution = {}
-        
+
         while self.running:
             try:
                 current_time = time.time()
-                
+
                 for command_config in commands:
                     command_name = command_config['name']
                     command = command_config['command']
                     interval = command_config.get('interval', 300)  # Default 5 minutes
-                    
+
                     # Check if it's time to execute this command
-                    if (command_name not in last_execution or 
+                    if (command_name not in last_execution or
                         current_time - last_execution[command_name] >= interval):
-                        
+
                         logger.debug(f"Executing command '{command}' on {hostname}")
                         stdout, stderr, exit_code = executor.execute_command(command)
-                        
+
                         if exit_code == 0 and stdout is not None:
                             self.mqtt_client.publish_sensor_state(
                                 sensor_name=command_name,
@@ -288,35 +288,35 @@ class SSHCommandAddon:
                                 hostname=hostname,
                                 value="Error"
                             )
-                        
+
                         last_execution[command_name] = current_time
-                
+
                 time.sleep(10)  # Check every 10 seconds
-                
+
             except Exception as e:
                 logger.error(f"Error in command execution thread for {hostname}: {e}")
                 time.sleep(30)  # Wait before retrying
-    
+
     def run(self):
         """Main run loop"""
         logger.info("Starting SSH Command to MQTT add-on")
-        
+
         # Setup MQTT
         if not self.setup_mqtt():
             logger.error("Failed to setup MQTT connection")
             sys.exit(1)
-        
+
         # Setup SSH executors
         self.setup_ssh_executors()
-        
+
         if not self.ssh_executors:
             logger.error("No SSH hosts configured")
             sys.exit(1)
-        
+
         # Publish discovery configurations
         time.sleep(2)  # Wait for MQTT connection to stabilize
         self.publish_discovery_configs()
-        
+
         # Start command execution threads for each host
         threads = []
         for hostname in self.ssh_executors.keys():
@@ -327,9 +327,9 @@ class SSHCommandAddon:
             )
             thread.start()
             threads.append(thread)
-        
+
         logger.info("Add-on started successfully")
-        
+
         # Keep the main thread alive
         try:
             while self.running:
@@ -337,7 +337,7 @@ class SSHCommandAddon:
         except KeyboardInterrupt:
             logger.info("Shutting down...")
             self.running = False
-            
+
             # Cleanup
             for hostname, host_data in self.ssh_executors.items():
                 host_data['executor'].disconnect()

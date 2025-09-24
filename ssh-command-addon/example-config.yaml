@@ -14,18 +14,18 @@ ssh_hosts:
         interval: 60
         unit_of_measurement: "°C"
         device_class: "temperature"
-      
+
       # System uptime
       - name: "uptime"
         command: "uptime -p"
         interval: 300
-        
+
       # Memory usage percentage
       - name: "memory_usage"
         command: "free | grep Mem | awk '{printf \"%.2f\", ($3/$2) * 100.0}'"
         interval: 120
         unit_of_measurement: "%"
-        
+
       # Disk usage percentage for root filesystem
       - name: "disk_usage_root"
         command: "df -h / | tail -1 | awk '{print $5}' | sed 's/%//'"
@@ -42,7 +42,7 @@ ssh_hosts:
       - name: "nginx_status"
         command: "systemctl is-active nginx"
         interval: 60
-        
+
       # Get load average
       - name: "load_average"
         command: "uptime | awk -F'load average:' '{ print $2 }' | awk '{ print $1 }' | sed 's/,//'"

@@ -98,12 +98,12 @@ commands:
     command: "top -bn1 | grep 'Cpu(s)' | awk '{print $2}' | sed 's/%us,//'"
     interval: 60
     unit_of_measurement: "%"
-    
+
   - name: "memory_usage"
     command: "free | grep Mem | awk '{printf \"%.2f\", ($3/$2) * 100.0}'"
     interval: 120
     unit_of_measurement: "%"
-    
+
   - name: "disk_usage_root"
     command: "df -h / | tail -1 | awk '{print $5}' | sed 's/%//'"
     interval: 300
