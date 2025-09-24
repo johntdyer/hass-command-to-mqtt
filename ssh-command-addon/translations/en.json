@@ -1,0 +1,16 @@
+{
+  "configuration": {
+    "ssh_hosts": {
+      "name": "SSH Hosts",
+      "description": "List of SSH hosts and commands to execute"
+    },
+    "mqtt": {
+      "name": "MQTT Configuration",
+      "description": "MQTT broker connection settings"
+    },
+    "log_level": {
+      "name": "Log Level",
+      "description": "Set the logging level"
+    }
+  }
+}

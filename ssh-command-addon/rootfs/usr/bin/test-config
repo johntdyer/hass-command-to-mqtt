@@ -1,0 +1,83 @@
+#!/usr/bin/env python3
+"""Test script for SSH Command to MQTT Add-on"""
+
+import json
+import sys
+import os
+
+def validate_config(config_path):
+    """Validate the add-on configuration"""
+    try:
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+        
+        # Check required fields
+        if 'ssh_hosts' not in config:
+            print("ERROR: 'ssh_hosts' is required")
+            return False
+        
+        if not isinstance(config['ssh_hosts'], list):
+            print("ERROR: 'ssh_hosts' must be a list")
+            return False
+        
+        if len(config['ssh_hosts']) == 0:
+            print("ERROR: At least one SSH host must be configured")
+            return False
+        
+        # Validate each host
+        for i, host in enumerate(config['ssh_hosts']):
+            host_id = f"ssh_hosts[{i}]"
+            
+            # Required fields
+            for required in ['hostname', 'username', 'commands']:
+                if required not in host:
+                    print(f"ERROR: {host_id}.{required} is required")
+                    return False
+            
+            # Authentication check
+            if not host.get('password') and not host.get('private_key'):
+                print(f"ERROR: {host_id} must have either password or private_key")
+                return False
+            
+            # Validate commands
+            if not isinstance(host['commands'], list):
+                print(f"ERROR: {host_id}.commands must be a list")
+                return False
+            
+            if len(host['commands']) == 0:
+                print(f"WARNING: {host_id} has no commands configured")
+            
+            for j, cmd in enumerate(host['commands']):
+                cmd_id = f"{host_id}.commands[{j}]"
+                
+                for required in ['name', 'command']:
+                    if required not in cmd:
+                        print(f"ERROR: {cmd_id}.{required} is required")
+                        return False
+                
+                # Check for duplicate command names within the same host
+                names = [c['name'] for c in host['commands']]
+                if len(names) != len(set(names)):
+                    print(f"ERROR: {host_id} has duplicate command names")
+                    return False
+        
+        print("Configuration validation passed!")
+        return True
+        
+    except FileNotFoundError:
+        print(f"ERROR: Configuration file not found: {config_path}")
+        return False
+    except json.JSONDecodeError as e:
+        print(f"ERROR: Invalid JSON in configuration: {e}")
+        return False
+    except Exception as e:
+        print(f"ERROR: Configuration validation failed: {e}")
+        return False
+
+if __name__ == "__main__":
+    config_path = sys.argv[1] if len(sys.argv) > 1 else "/data/options.json"
+    
+    if not validate_config(config_path):
+        sys.exit(1)
+    
+    print("All checks passed!")

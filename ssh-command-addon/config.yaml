@@ -1,0 +1,61 @@
+# https://developers.home-assistant.io/docs/add-ons/configuration#add-on-config
+name: SSH Command to MQTT
+version: "1.0.0"
+slug: ssh_command_mqtt
+description: Connects to remote hosts via SSH, runs commands, and publishes results as MQTT sensors
+url: "https://github.com/your-username/ssh-command-addon"
+arch:
+  - armhf
+  - armv7
+  - aarch64
+  - amd64
+  - i386
+init: false
+services:
+  - mqtt:want
+options:
+  ssh_hosts:
+    - hostname: "example.com"
+      username: "user"
+      password: ""
+      private_key: ""
+      port: 22
+      commands:
+        - name: "system_uptime"
+          command: "uptime"
+          interval: 300
+          unit_of_measurement: ""
+          device_class: ""
+        - name: "disk_usage"
+          command: "df -h / | tail -1 | awk '{print $5}' | sed 's/%//'"
+          interval: 600
+          unit_of_measurement: "%"
+          device_class: ""
+  mqtt:
+    broker: "core-mosquitto"
+    port: 1883
+    username: ""
+    password: ""
+    discovery_prefix: "homeassistant"
+  log_level: "info"
+schema:
+  ssh_hosts:
+    - hostname: "str"
+      username: "str"
+      password: "password?"
+      private_key: "str?"
+      port: "int(1,65535)?"
+      commands:
+        - name: "str"
+          command: "str"
+          interval: "int(30,86400)?"
+          unit_of_measurement: "str?"
+          device_class: "str?"
+  mqtt:
+    broker: "str?"
+    port: "int(1,65535)?"
+    username: "str?"
+    password: "password?"
+    discovery_prefix: "str?"
+  log_level: "list(debug|info|warning|error)?"
+image: "ghcr.io/your-username/{arch}-addon-ssh-command-mqtt"

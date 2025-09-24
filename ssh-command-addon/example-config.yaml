@@ -1,0 +1,60 @@
+# Example configuration for SSH Command to MQTT Add-on
+# Copy this to your add-on configuration and modify as needed
+
+ssh_hosts:
+  # Example Raspberry Pi host
+  - hostname: "192.168.1.100"
+    username: "pi"
+    password: "raspberry"
+    port: 22
+    commands:
+      # CPU Temperature (Raspberry Pi specific)
+      - name: "cpu_temperature"
+        command: "cat /sys/class/thermal/thermal_zone0/temp | awk '{print $1/1000}'"
+        interval: 60
+        unit_of_measurement: "°C"
+        device_class: "temperature"
+      
+      # System uptime
+      - name: "uptime"
+        command: "uptime -p"
+        interval: 300
+        
+      # Memory usage percentage
+      - name: "memory_usage"
+        command: "free | grep Mem | awk '{printf \"%.2f\", ($3/$2) * 100.0}'"
+        interval: 120
+        unit_of_measurement: "%"
+        
+      # Disk usage percentage for root filesystem
+      - name: "disk_usage_root"
+        command: "df -h / | tail -1 | awk '{print $5}' | sed 's/%//'"
+        interval: 300
+        unit_of_measurement: "%"
+
+  # Example server with SSH key authentication
+  - hostname: "server.example.com"
+    username: "admin"
+    private_key: "/ssl/id_rsa"
+    port: 22
+    commands:
+      # Check if nginx service is running
+      - name: "nginx_status"
+        command: "systemctl is-active nginx"
+        interval: 60
+        
+      # Get load average
+      - name: "load_average"
+        command: "uptime | awk -F'load average:' '{ print $2 }' | awk '{ print $1 }' | sed 's/,//'"
+        interval: 120
+
+# MQTT Configuration
+mqtt:
+  broker: "core-mosquitto"
+  port: 1883
+  username: ""
+  password: ""
+  discovery_prefix: "homeassistant"
+
+# Logging level
+log_level: "info"
