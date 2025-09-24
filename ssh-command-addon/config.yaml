@@ -1,9 +1,9 @@
 # https://developers.home-assistant.io/docs/add-ons/configuration#add-on-config
 name: SSH Command to MQTT
-version: "1.0.0"
+version: "1.0.1"
 slug: ssh_command_mqtt
 description: Connects to remote hosts via SSH, runs commands, and publishes results as MQTT sensors
-url: "https://github.com/your-username/ssh-command-addon"
+url: "https://github.com/johndyer/ssh-command-addon"
 arch:
   - armhf
   - armv7
